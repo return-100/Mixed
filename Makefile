@@ -4,6 +4,13 @@
 ""After successful compilation type main.exe
 ""Thats it
 ""Dont name your makefile as simply 'make' it doesnt work
+""For Windows
 
 all:
     g++ main.cpp -o main
+    
+""For Linux
+
+all:
+    g++ main.cpp -o main
+    ./main.out
