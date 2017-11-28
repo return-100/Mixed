@@ -2,144 +2,139 @@
 
 using namespace std;
 
-const int maxn = 100010;
-const unsigned long long mod = (1 << 64);
+const int maxn = 111111;
+const int inf = 111111111;
 
-int n, m, cnt;
-char arr[100][100];
-unsigned long long dp[(1 << 8) + 1][(1 << 8) + 1][(1 << 8) + 1];
+bool mark[111];
+queue <int> q;
+vector <int> vec[111];
+int n, m, s, t, arr[111][111], weight[111][111], par[111];
 
-bool check(int type, int i, int j, int mask, int nxt)
+bool bfs()
 {
-    if (type == 0)
+    memset(par, 0, sizeof(par));
+    memset(mark, false, sizeof(mark));
+    
+    while(!q.empty())
+        q.pop();
+    
+    q.push(s), mark[s] = true;
+    
+    while (!q.empty())
     {
-        if (i < n - 1 && j < m && !(nxt & (1 << j)) && !(mask & (1 << j)))
-            return true;
-    }
-    else if (type == 1)
-    {
-        if (i < n && j < m - 1 && !(mask & (1 << j)) && !(mask & (1 << (j + 1))))
-            return true;
-    }
-    else if (type == 2)
-    {
-        if (i < n - 1 && j < m - 1 && !(nxt & (1 << j)) && !(mask & (1 << j)) && !(nxt & (1 << (j + 1))))
-            return true;
-    }
-    else if (type == 3)
-    {
-        if (i < n - 1 && j < m - 1 && !(nxt & (1 << j)) && !(mask & (1 << j)) && !(mask & (1 << (j + 1))))
-            return true;
-    }
-    else if (type == 4)
-    {
-        if (i < n - 1 && j > 0 && j < m && !(nxt & (1 << j)) && !(mask & (1 << j)) && !(nxt & (1 << (j - 1))))
-            return true;
-    }
-    else
-    {
-        if (i < n - 1 && j > 0 && j < m - 1 && !(mask & (1 << j)) && !(mask & (1 << (j + 1))) && !(nxt & (1 << (j + 1))))
-            return true;
-    }
-
-    return false;
-}
-
-pair<int, pair<int, int> > update(int type, int i, int j, int mask, int nxt)
-{
-    int num = 3;
-
-    if (type == 0)
-        nxt |= (1 << j), mask |= (1 << j), --num;
-    else if (type == 1)
-        mask |= (1 << j), mask |= (1 << (j + 1)), --num;
-    else if (type == 2)
-        nxt |= (1 << j), mask |= (1 << j), nxt |= (1 << (j + 1));
-    else if (type == 3)
-        nxt |= (1 << j), mask |= (1 << j), mask |= (1 << (j + 1));
-    else if (type == 4)
-        nxt |= (1 << j), mask |= (1 << j), nxt |= (1 << (j - 1));
-    else
-        nxt |= (1 << (j + 1)), mask |= (1 << j), mask |= (1 << (j + 1));
-
-    return{ nxt, { mask, num } };
-}
-
-unsigned long long solve(int idx, int mask, int nxt, int cur)
-{
-    if (m <= n)
-    {
-        if (idx == n)
-            return (cur ? 0 : 1);
-
-        if (mask == (1 << m) - 1)
-            return solve(idx + 1, nxt, 0, cur);
-
-        if (dp[idx][mask][nxt] != -1)
-            return dp[idx][mask][nxt];
-
-        unsigned long long ret = 0;
-
-        for (int i = 0; i < m; ++i)
+        int u = q.front();
+        q.pop();
+        
+        for (int i = 0; i < vec[u].size(); ++i)
         {
-            for (int j = 0; j < 6; ++j)
+            if (arr[u][vec[u][i]] > 0 && !mark[vec[u][i]])
             {
-                if (check(j, idx, i, mask, nxt))
-                {
-                    pair<int, pair<int, int> > var = update(j, idx, i, mask, nxt);
-                    ret += solve(idx, var.second.first, var.first, cur - var.second.second);
-                }
+                par[vec[u][i]] = u;
+                q.push(vec[u][i]);
+                mark[vec[u][i]] = true;
             }
         }
-
-        return dp[idx][mask][nxt] = ret;
     }
-    else
+    
+    return mark[t];
+}
+
+int capacity()
+{
+    int u = t, mn = inf;
+    
+    while (u != s)
+        mn = min(mn, arr[par[u]][u]), u = par[u];
+    
+    u = t;
+    
+    while (u != s)
     {
-        if (idx == n)
-            return (cur ? 0 : 1);
-
-        if (mask == (1 << n) - 1)
-            return solve(idx + 1, nxt, 0, cur);
-
-        if (dp[mask][idx][nxt] != -1)
-            return dp[mask][idx][nxt];
-
-        unsigned long long ret = 0;
-
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 0; j < 6; ++j)
-            {
-                if (check(j, i, idx, mask, nxt))
-                {
-                    pair<int, pair<int, int> > var = update(j, i, idx, mask, nxt);
-                    ret += solve(idx, var.second.first, var.first, cur - var.second.second);
-                }
-            }
-        }
-
-        return dp[mask][idx][nxt] = ret;
+        arr[par[u]][u] -= mn;
+        arr[u][par[u]] += mn;
+        u = par[u];
     }
+    
+    return mn;
+}
+
+int solve()
+{
+    int ans = 0;
+    
+    while (bfs())
+        ans += capacity();
+    
+    return ans;
+}
+
+void dfs(int u)
+{
+    mark[u] = true;
+    
+    for (int i = 0; i < vec[u].size(); ++i)
+    {
+        if (arr[i][vec[u][i]] > 0 && !mark[vec[u][i]])
+            dfs(vec[u][i]);
+    }
+    
 }
 
 int main()
 {
-    int test, cs = 1;
-    scanf("%d", &test);
-
-    while (test--)
+    memset(arr, 0, sizeof(arr));
+        
+    cin >> n >> m >> s >> t;
+        
+    int u, v, w;
+        
+    for (int i = 0; i < m; ++i)
     {
-        memset(dp, -1, sizeof(dp));
-
-        scanf("%d %d", &n, &m);
-
-        //for (int i = 0; i < n; ++i)
-            //scanf("%s", arr[i]);
-
-        printf("Case %d: %llu\n", cs++, solve(0, 0, 0, n * m));
+        cin >> u >> v >> w;
+        weight[u][v] = arr[u][v] = w;
+        vec[u].push_back(v);
+        vec[v].push_back(u);
     }
-
-    system("pause");
+        
+    cout << "Max Flow : " << solve() << endl;
+    
+    for (int i = 1; i <= n; ++i)
+    {
+        for (int j = 1; j <= n; ++j)
+        {
+            if (weight[i][j])
+                cout << i << "->" << j << " = " << weight[i][j] - arr[i][j] << endl;
+        }
+    }
+    
+    memset(mark, false, sizeof(mark));
+    
+    dfs(s);
+    
+    cout << "Min-Cut Edges :" << endl;
+    
+    for (int i = 1; i <= n; ++i)
+    {
+        for (int j = 1; j <= n; ++j)
+        {
+            if (weight[i][j] && mark[i] && !mark[j])
+                cout << i << " " << j << endl;
+        }
+    }
+    
     return 0;
 }
+
+/*
+ 6 10 1 6
+ 1 2 16
+ 1 3 13
+ 2 3 10
+ 2 4 12
+ 3 2 4
+ 3 5 14
+ 4 3 9
+ 4 6 20
+ 5 4 7
+ 5 6 4
+ */
